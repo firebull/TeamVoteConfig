@@ -24,7 +24,7 @@ public OnPluginStart()
 	CreateConVar("sm_tvc_version", GETVERSION, "Version of Sourcemod Config Loader plugin", FCVAR_SPONLY|FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	
 	sm_tvc_prefix     = CreateConVar("sm_tvc_prefix", "", "Prefix of config which will be added to its name.");
-	sm_tvc_exec_delay = CreateConVar("sm_tvc_exec_delay", "3", "Delay to start voted config.");
+	sm_tvc_exec_delay = CreateConVar("sm_tvc_exec_delay", "3.0", "Delay to start voted config.");
 	
 	AutoExecConfig(true, "tvc")
 	
@@ -99,8 +99,8 @@ public Action:ConfigSuggest(suggester, args)
 					
 					PrintToChatAll("\x03[TVC] \x05Will start %s config in %d seconds.", votedConfig, sm_tvc_exec_delay);
 					
-					// Reset voted config
-					votedConfig = "";
+					new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
+					CreateTimer(fdelay, StartConfig);
 				}
 				
 			}
@@ -155,8 +155,8 @@ public Action:ConfigConfirm(suggester, args)
 				
 				PrintToChatAll("\x03[TVC] \x05Will start %s config in %d seconds.", votedConfig, sm_tvc_exec_delay);
 				
-				// Reset votedConfig
-				votedConfig = "";
+				new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
+				CreateTimer(fdelay, StartConfig);
 										
 			}
 			else
@@ -175,7 +175,10 @@ public Action:ConfigConfirm(suggester, args)
 }
 
 
-public StartConfig(config)
+public Action:StartConfig(Handle:timer)
 {
-	ServerCommand("exec %s_%s.cfg", sm_tvc_prefix, config);
+	ServerCommand("exec %s_%s.cfg", sm_tvc_prefix, votedConfig);
+	// Reset votedConfig
+	votedConfig = "";
+	
 }
