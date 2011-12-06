@@ -1,18 +1,68 @@
+This plugin for SourceMod is made to start some configs
+after the both team vote. Generally it is made for
+L4D1 Rotoblin competition configs as there is no other
+way to start a match as from admin menu, or by !execcfg
+or by comp_loader plugin. Comp Loader is not approved and
+has no source code and it can't start other configs
+except of files with 4v4, 2v2 and so on file mask.
+
+To suggest a config a member of one of the team prints: 
+
+!cplay <SuperHardConfig>
+
+Any player of the other team can confirm the config by
+one of the commands:
+
+!confirm
+
+or
+
+!cplay <SuperHardConfig>
+
+Or suggests their own variant:
+
+!cplay <OtherSuperHardConfig>
+
+Server admins can force a config by:
+
+!forceplay <SuperHardConfig>
+
+Then a server starts the config after delay by mask:
+
+<prefix>_<SuperHardConfig>.cfg
+
+Prefix and delay are configurable through CVAR.
+
+==========================================================
 Плагин предназначен для запуска определенных конфигов после
 подверждения его обеими командами.
 
 Предполагается, что игрок одной из команд вводит в чат:
 
-!cplay SuperHardConfig
+!cplay <SuperHardConfig>
 
-Вторая команда должна ввести в чат один из вариантов:
+Вторая команда Подверждает предоженный конфиг командой:
 
 !confirm
-!cplay SuperHardConfig
+
+или
+
+!cplay <SuperHardConfig>
+
+Или предлагает свой вариант аналогичной командой:
+
+!cplay <OtherSuperHardConfig>
 
 Либо предложить свой конфиг, в этом случае первая команда
 должна подвердить конфиг аналогичным способом.
 
-Для администраторов должна быть доступна команда 
+Для администраторов должна быть доступна команда:
 
-!forceplay SuperHardConfig
+!forceplay <SuperHardConfig>
+
+После подтверждения сервер включает конфиг после задержки 
+по формату:
+
+<prefix>_<SuperHardConfig>.cfg
+
+Префикс (prefix) и задержка задаются параметрами CVAR.

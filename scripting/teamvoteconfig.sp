@@ -177,7 +177,15 @@ public Action:ConfigConfirm(suggester, args)
 
 public Action:StartConfig(Handle:timer)
 {
-	ServerCommand("exec %s_%s.cfg", sm_tvc_prefix, votedConfig);
+	if ( strlen(sm_tvc_prefix) > 0)
+	{
+		ServerCommand("exec %s_%s.cfg", sm_tvc_prefix, votedConfig);
+	}
+	else
+	{
+		ServerCommand("exec %s.cfg", votedConfig);
+	}
+	
 	// Reset votedConfig
 	votedConfig = "";
 	
