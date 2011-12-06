@@ -177,9 +177,12 @@ public Action:ConfigConfirm(suggester, args)
 
 public Action:StartConfig(Handle:timer)
 {
-	if ( strlen(sm_tvc_prefix) > 0)
+	new String:prefix[64];
+	GetConVarString(sm_tvc_prefix, prefix, sizeof(prefix));
+		
+	if ( strlen(prefix) > 0)
 	{
-		ServerCommand("exec %s_%s.cfg", sm_tvc_prefix, votedConfig);
+		ServerCommand("exec %s_%s.cfg", prefix, votedConfig);
 	}
 	else
 	{
