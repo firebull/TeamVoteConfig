@@ -1,6 +1,6 @@
 #include <sourcemod>
 
-#define GETVERSION "0.1.1"
+#define GETVERSION "0.1.2"
 
 new bool:votedTeamOne = false;
 new String:votedConfig[64];
@@ -21,6 +21,9 @@ public Plugin:myinfo =
 
 public OnPluginStart()
 {
+	LoadTranslations("common.phrases");
+	LoadTranslations("teamvoteconfig.phrases");
+		
 	CreateConVar("sm_tvc_version", GETVERSION, "Version of Sourcemod Config Loader plugin", FCVAR_SPONLY|FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	
 	sm_tvc_prefix     = CreateConVar("sm_tvc_prefix", "", "Prefix of config which will be added to its name.");
@@ -47,7 +50,7 @@ public Action:ConfigSuggest(suggester, args)
 	//Open the vote menu for the client if they arent using the server console
 	if(suggester < 1)
 	{
-		PrintToServer("\x03[TVC] \x05You cannot suggest a config from the server console, use the in-game chat");
+		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
 	}
 	else 
 	{
@@ -71,13 +74,13 @@ public Action:ConfigSuggest(suggester, args)
 		// Сначала убедиться, что игрок в команде
 		if (voterTeam > 1)
 		{
-			/* Получаем имя конфига */
+			// Get the name of config
 			GetCmdArg(1, newVotedConfig, sizeof(newVotedConfig));			
 			
-			// Если не указан конфиг
+			// If no config entered
 			if ( strlen(newVotedConfig) == 0)
 			{
-				PrintToChat(suggester, "\x03[TVC] \x05You must suggest a config.");
+				PrintToChat(suggester, "\x03[TVC] \x05%t.", "NoConfig");
 			}
 			else
 			// Если еще не было голосования
@@ -85,8 +88,8 @@ public Action:ConfigSuggest(suggester, args)
 				votedTeamOne = true;
 				votedTeam    = voterTeam;
 				votedConfig  = newVotedConfig;
-				PrintToChatAll("\x03[TVC] \x05Suggested config: %s.", votedConfig);
-				PrintToChatAll("\x03[TVC] \x05Waiting for the other team to confirm.");
+				PrintToChatAll("\x03[TVC] \x05%t", "SuggestedConfig", votedConfig);
+				PrintToChatAll("\x03[TVC] \x05%t", "WaitingConfirm");
 			}
 			else
 			// Если конфиг уже предложен другой командой
@@ -98,18 +101,18 @@ public Action:ConfigSuggest(suggester, args)
 					votedTeam    = voterTeam;
 					votedConfig  = newVotedConfig;
 					
-					PrintToChatAll("\x03[TVC] \x05The other team suggested another config: %s.", votedConfig);
-					PrintToChatAll("\x03[TVC] \x05Waiting for the other team to confirm.");
+					PrintToChatAll("\x03[TVC] \x05%t", "OtherConfigSuggested", votedConfig);
+					PrintToChatAll("\x03[TVC] \x05%t", "WaitingConfirm");
 				}
 				else
 				{
 					// Reset vars
 					votedTeamOne = false;
 					votedTeam = 0;
-					
-					PrintToChatAll("\x03[TVC] \x05Will start %s config in %d seconds.", votedConfig, sm_tvc_exec_delay);
-					
 					new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
+					
+					PrintToChatAll("\x03[TVC] \x05%t", "StartTimer", votedConfig, fdelay);
+										
 					CreateTimer(fdelay, StartConfig);
 				}
 				
@@ -118,12 +121,12 @@ public Action:ConfigSuggest(suggester, args)
 			// Если конфиг уже предложен своей командой
 			if (votedTeam == voterTeam)
 			{
-				PrintToChat(suggester, "\x03[TVC] \x05Your team already suggested a config: %s", votedConfig);
+				PrintToChat(suggester, "\x03[TVC] \x05%t", "PlayerTeamConfigSuggested", votedConfig);
 			}
 		}
 		else
 		{
-			PrintToChat(suggester, "\x03[TVC] \x05You must be in team to suggest a config");
+			PrintToChat(suggester, "\x03[TVC] \x05%t", "NotInTeam");
 		}
 	}
 		
@@ -140,7 +143,7 @@ public Action:ConfigConfirm(suggester, args)
 	//Open the vote menu for the client if they arent using the server console
 	if(suggester < 1)
 	{
-		PrintToServer("\x03[TVC] \x05You cannot confirm a config from the server console, use the in-game chat");
+		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
 	}
 	else
 	{
@@ -157,18 +160,18 @@ public Action:ConfigConfirm(suggester, args)
 		if ( voterTeam > 1){
 			// Если еще не было голосования
 			if ( votedTeamOne == false ){
-				PrintToChat(suggester, "\x03[TVC] \x05None of configs is suggested. You can suggest one by commnad !play <config>.");
+				PrintToChat(suggester, "\x03[TVC] \x05%t", "ConfirmNoConfig");
 			}
 			else
 			// Если конфиг уже предложен другой командой
 			if ( votedTeamOne == true && votedTeam != voterTeam ){
 				// Reset vars
 				votedTeamOne = false;
-				votedTeam = 0;
-				
-				PrintToChatAll("\x03[TVC] \x05Will start %s config in %d seconds.", votedConfig, sm_tvc_exec_delay);
-				
+				votedTeam = 0;				
 				new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
+									
+				PrintToChatAll("\x03[TVC] \x05%t", "StartTimer", votedConfig, fdelay);
+				
 				CreateTimer(fdelay, StartConfig);
 										
 			}
@@ -176,13 +179,12 @@ public Action:ConfigConfirm(suggester, args)
 			// Если конфиг уже предложен своей командой
 			if (votedTeam == voterTeam)
 			{
-				PrintToChat(suggester, "\x03[TVC] \x05You can't confirm as your team already");
-				PrintToChat(suggester, "          \x05suggested a config: %s", votedConfig);
+				PrintToChat(suggester, "\x03[TVC] \x05%t", "AlreadySuggested", votedConfig);
 			}
 		}
 		else
 		{
-			PrintToChat(suggester, "\x03[TVC] \x05You must be in team to suggest a config");
+			PrintToChat(suggester, "\x03[TVC] \x05%t", "NotInTeam");
 		}
 	}
 }
@@ -199,17 +201,17 @@ public Action:ForcePlay(admin, args)
 	//Open the vote menu for the client if they arent using the server console
 	if(admin < 1)
 	{
-		PrintToServer("\x03[TVC] \x05You cannot suggest a config from the server console, use the in-game chat");
+		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
 	}
 	else 
 	{
-		/* Получаем имя конфига */
+		// Get the name of config
 		GetCmdArg(1, forcedConfig, sizeof(forcedConfig));			
 		
-		// Если не указан конфиг
+		// If no config entered
 		if ( strlen(forcedConfig) == 0)
 		{
-			PrintToChat(admin, "\x03[TVC] \x05You must suggest a config.");
+			PrintToChat(admin, "\x03[TVC] \x05%t.", "NoConfig");
 		}
 		else
 		{
@@ -217,10 +219,10 @@ public Action:ForcePlay(admin, args)
 			votedTeamOne = false;
 			votedTeam = 0;
 			votedConfig = forcedConfig;
-			
-			PrintToChatAll("\x03[TVC] \x05Will start %s config in %d seconds.", votedConfig, sm_tvc_exec_delay);
-			
 			new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
+								
+			PrintToChatAll("\x03[TVC] \x05%t", "StartTimer", votedConfig, fdelay);
+			
 			CreateTimer(fdelay, StartConfig);
 		}
 		
@@ -231,7 +233,7 @@ public Action:ForcePlay(admin, args)
 	
 }
 
-
+// Start the config
 public Action:StartConfig(Handle:timer)
 {
 	new String:prefix[64];

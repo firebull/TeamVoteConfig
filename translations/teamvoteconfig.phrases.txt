@@ -1,0 +1,53 @@
+"Phrases"
+{
+	"NoConfig"
+	{
+		"en"	"You must suggest a config."
+	}
+	
+	"ConfirmNoConfig"
+	{
+		"en"	"You must suggest a config. You can suggest one by commnad !cplay <config>."
+	}
+	
+	"SuggestedConfig"
+	{
+		"#format"	"{1:s}"
+		"en"		"Suggested config: {1}."
+	}
+	
+	"WaitingConfirm"
+	{
+		"en"	"Waiting for the other team to confirm."
+	}
+	
+	"OtherConfigSuggested"
+	{
+		"#format"	"{1:s}"
+		"en"		"The other team suggested another config: {1}."
+	}
+	
+	"PlayerTeamConfigSuggested"
+	{
+		"#format"	"{1:s}"
+		"en"		"Your team already suggested a config: {1}. Waiting for the confirmation."
+	}
+	
+	"NotInTeam"
+	{
+		"en"	"You must be in team to suggest a config."
+	}
+	
+	"AlreadySuggested"
+	{
+		"#format"	"{1:s}"
+		"en"		"You can't confirm as your team already suggested a config: {1}"
+	}
+	
+	"StartTimer"
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		"Will start {1} config in {2} seconds."
+	}
+	
+}
