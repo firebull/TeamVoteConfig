@@ -1,13 +1,13 @@
 #include <sourcemod>
 
-#define GETVERSION "0.1"
+#define GETVERSION "0.1.1"
 
 new bool:votedTeamOne = false;
 new String:votedConfig[64];
 new votedTeam = 0;
 
-new Handle:sm_tvc_prefix     = INVALID_HANDLE
-new Handle:sm_tvc_exec_delay = INVALID_HANDLE
+new Handle:sm_tvc_prefix     = INVALID_HANDLE;
+new Handle:sm_tvc_exec_delay = INVALID_HANDLE;
 
 //Plugin Info
 public Plugin:myinfo = 
@@ -31,9 +31,13 @@ public OnPluginStart()
 	RegConsoleCmd("cplay", ConfigSuggest);
 	RegConsoleCmd("load", ConfigSuggest);
 	RegConsoleCmd("confirm", ConfigConfirm);
+	RegAdminCmd("forceplay", ForcePlay, ADMFLAG_CONFIG);
 }
 
-//Command that a player can use to vote for a config
+/* !cplay
+ * Command that a player can use to vote for a config
+ * Команда, позволяющая предложить игровой конфиг
+ */
 public Action:ConfigSuggest(suggester, args)
 {
 	
@@ -70,6 +74,12 @@ public Action:ConfigSuggest(suggester, args)
 			/* Получаем имя конфига */
 			GetCmdArg(1, newVotedConfig, sizeof(newVotedConfig));			
 			
+			// Если не указан конфиг
+			if ( strlen(newVotedConfig) == 0)
+			{
+				PrintToChat(suggester, "\x03[TVC] \x05You must suggest a config.");
+			}
+			else
 			// Если еще не было голосования
 			if ( votedTeamOne == false ){
 				votedTeamOne = true;
@@ -119,7 +129,10 @@ public Action:ConfigSuggest(suggester, args)
 		
 }
 
-//Command that a player can use to confirm a config
+/* !confirm
+ * Command that a player can use to confirm a config
+ * Подверждение конфига противоположной командой
+ */
 public Action:ConfigConfirm(suggester, args)
 {
 	new voterTeam;
@@ -172,6 +185,50 @@ public Action:ConfigConfirm(suggester, args)
 			PrintToChat(suggester, "\x03[TVC] \x05You must be in team to suggest a config");
 		}
 	}
+}
+
+
+/* !forceplay
+ * Admin force command
+ * Принудительный запуск конфига админом
+ */
+public Action:ForcePlay(admin, args)
+{
+	new String:forcedConfig[64];
+	
+	//Open the vote menu for the client if they arent using the server console
+	if(admin < 1)
+	{
+		PrintToServer("\x03[TVC] \x05You cannot suggest a config from the server console, use the in-game chat");
+	}
+	else 
+	{
+		/* Получаем имя конфига */
+		GetCmdArg(1, forcedConfig, sizeof(forcedConfig));			
+		
+		// Если не указан конфиг
+		if ( strlen(forcedConfig) == 0)
+		{
+			PrintToChat(admin, "\x03[TVC] \x05You must suggest a config.");
+		}
+		else
+		{
+			// Reset vars
+			votedTeamOne = false;
+			votedTeam = 0;
+			votedConfig = forcedConfig;
+			
+			PrintToChatAll("\x03[TVC] \x05Will start %s config in %d seconds.", votedConfig, sm_tvc_exec_delay);
+			
+			new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
+			CreateTimer(fdelay, StartConfig);
+		}
+		
+		
+		
+		
+	}
+	
 }
 
 
