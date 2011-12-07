@@ -1,6 +1,6 @@
 #include <sourcemod>
 
-#define GETVERSION "0.1.4"
+#define GETVERSION "0.1.5"
 
 new bool:votedTeamOne = false;
 new String:votedConfig[64];
@@ -32,7 +32,7 @@ public OnPluginStart()
 	AutoExecConfig(true, "tvc")
 	
 	RegConsoleCmd("cplay", ConfigSuggest);
-	RegConsoleCmd("load", ConfigSuggest);
+	RegConsoleCmd("cfg", ConfigSuggest);
 	RegConsoleCmd("confirm", ConfigConfirm);
 	RegAdminCmd("forceplay", ForcePlay, ADMFLAG_CONFIG);
 }
