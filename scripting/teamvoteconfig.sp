@@ -1,6 +1,6 @@
 #include <sourcemod>
 
-#define GETVERSION "0.1.2"
+#define GETVERSION "0.1.3"
 
 new bool:votedTeamOne = false;
 new String:votedConfig[64];
@@ -54,7 +54,7 @@ public Action:ConfigSuggest(suggester, args)
 	}
 	else 
 	{
-		/* Начинаем обратабтывать запрос
+		/* Начинаем обрабатывать запрос
 		 * 
 		 * !play 
 		 * - Если votedTeamOne пустая, значит голосования еще не было.
@@ -71,7 +71,8 @@ public Action:ConfigSuggest(suggester, args)
 		 * 
 		 */		
 		voterTeam = GetClientTeam(suggester);
-		// Сначала убедиться, что игрок в команде
+		
+		// Let's check that player is in team
 		if (voterTeam > 1)
 		{
 			// Get the name of config
@@ -80,7 +81,7 @@ public Action:ConfigSuggest(suggester, args)
 			// If no config entered
 			if ( strlen(newVotedConfig) == 0)
 			{
-				PrintToChat(suggester, "\x03[TVC] \x05%t.", "NoConfig");
+				PrintToChat(suggester, "\x03[TVC] \x05%t", "NoConfig");
 			}
 			else
 			// Если еще не было голосования
@@ -106,13 +107,13 @@ public Action:ConfigSuggest(suggester, args)
 				}
 				else
 				{
+					new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
+					
 					// Reset vars
 					votedTeamOne = false;
 					votedTeam = 0;
-					new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
 					
-					PrintToChatAll("\x03[TVC] \x05%t", "StartTimer", votedConfig, fdelay);
-										
+					// Start the config
 					CreateTimer(fdelay, StartConfig);
 				}
 				
@@ -156,7 +157,7 @@ public Action:ConfigConfirm(suggester, args)
 		
 		voterTeam   = GetClientTeam(suggester);
 		
-		// Сначала убедиться, что игрок в команде 		
+		// Let's check that player is in team		
 		if ( voterTeam > 1){
 			// Если еще не было голосования
 			if ( votedTeamOne == false ){
@@ -165,18 +166,19 @@ public Action:ConfigConfirm(suggester, args)
 			else
 			// Если конфиг уже предложен другой командой
 			if ( votedTeamOne == true && votedTeam != voterTeam ){
+				
+				new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
+				
 				// Reset vars
 				votedTeamOne = false;
-				votedTeam = 0;				
-				new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
-									
-				PrintToChatAll("\x03[TVC] \x05%t", "StartTimer", votedConfig, fdelay);
+				votedTeam = 0;																					
 				
+				// Start the config
 				CreateTimer(fdelay, StartConfig);
 										
 			}
 			else
-			// Если конфиг уже предложен своей командой
+			// If a config already suggested by player's team
 			if (votedTeam == voterTeam)
 			{
 				PrintToChat(suggester, "\x03[TVC] \x05%t", "AlreadySuggested", votedConfig);
@@ -211,18 +213,18 @@ public Action:ForcePlay(admin, args)
 		// If no config entered
 		if ( strlen(forcedConfig) == 0)
 		{
-			PrintToChat(admin, "\x03[TVC] \x05%t.", "NoConfig");
+			PrintToChat(admin, "\x03[TVC] \x05%t", "NoConfig");
 		}
 		else
 		{
+			new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
+			
 			// Reset vars
 			votedTeamOne = false;
-			votedTeam = 0;
-			votedConfig = forcedConfig;
-			new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
-								
-			PrintToChatAll("\x03[TVC] \x05%t", "StartTimer", votedConfig, fdelay);
+			votedTeam    = 0;
+			votedConfig  = forcedConfig;			
 			
+			// Start the config
 			CreateTimer(fdelay, StartConfig);
 		}
 		
@@ -237,8 +239,11 @@ public Action:ForcePlay(admin, args)
 public Action:StartConfig(Handle:timer)
 {
 	new String:prefix[64];
+	new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
 	GetConVarString(sm_tvc_prefix, prefix, sizeof(prefix));
-		
+	
+	PrintToChatAll("\x03[TVC] \x05%t", "StartTimer", votedConfig, RoundFloat(fdelay));
+	
 	if ( strlen(prefix) > 0)
 	{
 		ServerCommand("exec %s_%s.cfg", prefix, votedConfig);

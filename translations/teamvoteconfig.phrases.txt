@@ -41,7 +41,7 @@
 	"AlreadySuggested"
 	{
 		"#format"	"{1:s}"
-		"en"		"You can't confirm as your team already suggested a config: {1}"
+		"en"		"You can't confirm as your team already suggested a config: {1}."
 	}
 	
 	"StartTimer"
