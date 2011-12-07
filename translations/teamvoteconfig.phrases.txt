@@ -50,4 +50,10 @@
 		"en"		"Will start {1} config in {2} seconds."
 	}
 	
+	"Starting"
+	{
+		"#format"	"{1:s}"
+		"en"		"Now starting the {1} config."
+	}
+	
 }

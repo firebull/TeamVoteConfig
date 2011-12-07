@@ -1,6 +1,6 @@
 #include <sourcemod>
 
-#define GETVERSION "0.1.3"
+#define GETVERSION "0.1.4"
 
 new bool:votedTeamOne = false;
 new String:votedConfig[64];
@@ -113,6 +113,8 @@ public Action:ConfigSuggest(suggester, args)
 					votedTeamOne = false;
 					votedTeam = 0;
 					
+					PrintToChatAll("\x03[TVC] \x05%t", "StartTimer", votedConfig, RoundFloat(fdelay));
+					
 					// Start the config
 					CreateTimer(fdelay, StartConfig);
 				}
@@ -173,6 +175,8 @@ public Action:ConfigConfirm(suggester, args)
 				votedTeamOne = false;
 				votedTeam = 0;																					
 				
+				PrintToChatAll("\x03[TVC] \x05%t", "StartTimer", votedConfig, RoundFloat(fdelay));
+				
 				// Start the config
 				CreateTimer(fdelay, StartConfig);
 										
@@ -222,7 +226,9 @@ public Action:ForcePlay(admin, args)
 			// Reset vars
 			votedTeamOne = false;
 			votedTeam    = 0;
-			votedConfig  = forcedConfig;			
+			votedConfig  = forcedConfig;
+			
+			PrintToChatAll("\x03[TVC] \x05%t", "StartTimer", votedConfig, RoundFloat(fdelay));
 			
 			// Start the config
 			CreateTimer(fdelay, StartConfig);
@@ -239,10 +245,9 @@ public Action:ForcePlay(admin, args)
 public Action:StartConfig(Handle:timer)
 {
 	new String:prefix[64];
-	new Float:fdelay = GetConVarFloat(sm_tvc_exec_delay);
 	GetConVarString(sm_tvc_prefix, prefix, sizeof(prefix));
 	
-	PrintToChatAll("\x03[TVC] \x05%t", "StartTimer", votedConfig, RoundFloat(fdelay));
+	PrintToChatAll("\x03[TVC] \x05%t", "Starting", votedConfig);
 	
 	if ( strlen(prefix) > 0)
 	{
