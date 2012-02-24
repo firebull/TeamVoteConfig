@@ -1,6 +1,10 @@
 #include <sourcemod>
+#include <sourcemod>
+#include <sdktools>
+#include <sdktools_functions>
+#undef REQUIRE_PLUGIN
 
-#define GETVERSION "0.1.6"
+#define GETVERSION "0.2.1"
 
 new bool:votedTeamOne = false;
 new String:votedConfig[64];
@@ -10,12 +14,16 @@ new Handle:sm_tvc_prefix     = INVALID_HANDLE;
 new Handle:sm_tvc_exec_delay = INVALID_HANDLE;
 new Handle:sm_tvc_comploader_disable = INVALID_HANDLE;
 
+// Sdk calls
+new Handle:fSHS = INVALID_HANDLE;
+new Handle:fTOB = INVALID_HANDLE;
+
 //Plugin Info
 public Plugin:myinfo = 
 {
 	name   = "Team Vote Config Loader",
 	author = "Comrade Bulkin",
-	description = "Executes config by Team Vote",
+	description = "Executes config by Team Vote. Also player can change team by !infected, !survivor or !surv",
 	version = GETVERSION,
 	url     = "http://forum.teamserver.ru"
 }
@@ -33,22 +41,39 @@ public OnPluginStart()
 	
 	AutoExecConfig(true, "tvc")
 	
-	RegConsoleCmd("cplay", ConfigSuggest);
-	RegConsoleCmd("cfg", ConfigSuggest);
-	RegConsoleCmd("confirm", ConfigConfirm);
-	RegAdminCmd("forceplay", ForcePlay, ADMFLAG_CONFIG);
+	StartPrepSDKCall(SDKCall_Player);
+	PrepSDKCall_SetFromConf(INVALID_HANDLE, SDKConf_Signature, "SetHumanSpec");
+	PrepSDKCall_AddParameter(SDKType_CBasePlayer, SDKPass_Pointer);
+	fSHS = EndPrepSDKCall();
+	
+	StartPrepSDKCall(SDKCall_Player);
+	PrepSDKCall_SetFromConf(INVALID_HANDLE, SDKConf_Signature, "TakeOverBot");
+	PrepSDKCall_AddParameter(SDKType_Bool, SDKPass_Plain);
+	fTOB = EndPrepSDKCall();
+
+	RegConsoleCmd("sm_cplay", ConfigSuggest);
+	RegConsoleCmd("sm_cfg", ConfigSuggest);
+	RegConsoleCmd("sm_confirm", ConfigConfirm);
+	RegConsoleCmd("sm_switchme", switchPlayer);
+	RegAdminCmd("sm_forceplay", ForcePlay, ADMFLAG_CONFIG);
+	
 }
 
 public OnAllPluginsLoaded()
 {
 	new compLoaderDisable = GetConVarInt(sm_tvc_comploader_disable);
 	
-	// Check if user wants to disable Comp Loader
-			
+	// Check if user wants to disable Comp Loader			
 	new Handle:iter = GetPluginIterator(); // Get plugins list
 	new String:pl[64];
 	new bool:compLoaderExists = false;
+	new bool:l4dreadyExists = false;
+
+	// GameName
+	new String:GameType[50];
+	GetGameFolderName(GameType, sizeof(GameType));
 	
+	// Try to find the comp_loader
 	while (MorePlugins(iter))
 	{
 		GetPluginFilename(ReadPlugin(iter), pl, sizeof(pl));
@@ -64,15 +89,38 @@ public OnAllPluginsLoaded()
 			{
 				compLoaderExists = true; // The Key, that Comp Loader is stil exists
 			}
-		}			
+		}
+		else
+		if (StrContains(pl, "l4dready", false) == 0)
+		{
+			l4dreadyExists = true; // The key, that L4DReady plugin exists
+		}		
 	}
 	
 	CloseHandle(iter); 
 	
 	if (compLoaderExists == false)
 	{
-		RegConsoleCmd("load", ConfigSuggest); // Add !load command
+		RegConsoleCmd("sm_load", ConfigSuggest); // Add !load command
 	}
+	// End Of searching comp_loader
+
+	if (l4dreadyExists == false)
+	{
+		RegConsoleCmd("sm_spectate", spectate); // Add !spectate command
+	}
+
+	// Set special variables for different games
+
+	if (StrEqual(GameType, "left4dead", false) || StrEqual(GameType, "left4dead2", false) )
+	{
+		PrintToServer("[TVC] %s: %s", "The Game is", GameType, LANG_SERVER);
+		PrintToServer("[TVC] Now it's possible to use !infected, !survivor or !surv");
+		RegConsoleCmd("sm_infected", toInfected); // Add !infected command
+		RegConsoleCmd("sm_survivor", toSurvivors); // Add !survivor command
+		RegConsoleCmd("sm_surv", toSurvivors); // Add !surv command
+	} 
+
 }
 
 /* !cplay or !cfg of !load 
@@ -325,4 +373,165 @@ public Action:StartConfig(Handle:timer)
 	
 	// Reset votedConfig
 	votedConfig = "";	
+}
+
+/*  The function, which allows a player
+	to switch himself to any team or to spectator
+	by a simple command !infected, !surv and so on
+*/
+public Action:switchPlayer(player, args)
+{
+	if(player < 1)
+	{
+		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
+	}
+	else
+	{
+		if (GetClientTeam(player) == 2)
+		{
+			PerformL4DSwitch (player, 3, false);
+		}
+		else
+		if (GetClientTeam(player) == 3)
+		{
+			PerformL4DSwitch (player, 2, false);
+		}
+		else
+		{
+			PrintToChat(player, "\x03[TVC] \x05%t", "MustBeInTeamToSwitch");
+		}
+	}
+}
+
+// Switch player to Spectator
+// Common function for all games
+public Action:spectate(player, args)
+{
+	if(player < 1)
+	{
+		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
+	}
+	else
+	{
+		PerformL4DSwitch (player, 1, false);			
+	}
+
+	return Plugin_Handled;
+}
+
+// Switch player to Infected
+public Action:toInfected(player, args)
+{
+	if(player < 1)
+	{
+		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
+	}
+	else
+	{
+		PerformL4DSwitch (player, 2, false);	
+	}
+
+	return Plugin_Handled;
+}
+
+// Switch player to Survivors
+public Action:toSurvivors(player, args)
+{
+	if(player < 1)
+	{
+		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
+	}
+	else
+	{
+		PerformL4DSwitch (player, 3, false);
+	}
+
+	return Plugin_Handled;
+}
+
+// The part of this code is taken from L4DSwitchPlayers
+PerformL4DSwitch (player, team, bool:silent)
+{
+	new String:PlayerName[200];
+	GetClientName(player, PlayerName, sizeof(PlayerName));
+
+	// GameName
+	new String:GameType[50];
+	GetGameFolderName(GameType, sizeof(GameType));
+
+	if ((!IsClientConnected(player)) || (!IsClientInGame(player)))
+	{
+		PrintToServer("[TVC] The player is not avilable anymore.");
+		return;
+	}
+	
+	// If teams are the same ...
+	if (GetClientTeam(player) == team)
+	{
+		PrintToChat(player, "[TVC] You are already in that team.");
+		return;
+	}
+	
+	if (StrEqual(GameType, "left4dead", false) || StrEqual(GameType, "left4dead2", false))
+	{
+		// If player was on infected .... 
+		if (GetClientTeam(player) == 3)
+		{
+			// ... and he wasn't a tank ...
+			new String:iClass[100];
+			GetClientModel(player, iClass, sizeof(iClass));
+			if (StrContains(iClass, "hulk", false) == -1)
+				ForcePlayerSuicide(player);	// we kill him
+		}
+		
+		// If player is survivors .... we need to do a little trick ....
+		if (team == 2)
+		{
+			// first we switch to spectators ..
+			ChangeClientTeam(player, 1); 
+			
+			// Search for an empty bot
+			new bot = 1;
+			while !(IsClientConnected(bot) && IsFakeClient(bot) && (GetClientTeam(bot) == 2)) do bot++;
+				
+			// force player to spec humans
+			SDKCall(fSHS, bot, player); 
+			
+			// force player to take over bot
+			SDKCall(fTOB, player, true); 
+		}
+		else // We change it's team ...
+		{
+			ChangeClientTeam(player, team);
+		}
+
+		// Print switch info
+		if (!silent)
+		{
+			if (team == 1)
+				PrintToChatAll("\x03[TVC] \x05%s \x03jumped to \x05Spectators", PlayerName);
+			else if (team == 2)
+				PrintToChatAll("\x03[TVC] \x05%s \x03jumped to \x05Survivors", PlayerName);
+			else if (team == 3)
+				PrintToChatAll("\x03[TVC] \x05%s \x03jumped to \x05Infected", PlayerName);
+		}
+	}
+	else
+	{
+		ChangeClientTeam(player, team);
+
+		// Print switch info/ Temporaly print team no.
+		// TODO: Print separate messages for any game
+		if (!silent)
+		{
+			if (team == 1)
+				PrintToChatAll("\x03[TVC] \x05%s \x03jumped to \x05Spectators", PlayerName);
+			else if (team == 2)
+				PrintToChatAll("\x03[TVC] \x05%s \x03jumped to \x05Team 1", PlayerName);
+			else if (team == 3)
+				PrintToChatAll("\x03[TVC] \x05%s \x03jumped to \x05Team 2", PlayerName);
+		}
+	}
+
+	
 }

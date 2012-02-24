@@ -56,4 +56,8 @@
 		"en"		"Now starting the {1} config."
 	}
 	
+	"MustBeInTeamToSwitch"
+	{
+		"en" 		"You must be in team to switch to another one."
+	}
 }
