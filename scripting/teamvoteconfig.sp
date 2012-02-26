@@ -4,7 +4,7 @@
 #include <sdktools_functions>
 #undef REQUIRE_PLUGIN
 
-#define GETVERSION "0.2.1"
+#define GETVERSION "0.2.2"
 
 new bool:votedTeamOne = false;
 new String:votedConfig[64];
@@ -14,7 +14,8 @@ new Handle:sm_tvc_prefix     = INVALID_HANDLE;
 new Handle:sm_tvc_exec_delay = INVALID_HANDLE;
 new Handle:sm_tvc_comploader_disable = INVALID_HANDLE;
 
-// Sdk calls
+// SDK calls
+new Handle:gConf = INVALID_HANDLE;
 new Handle:fSHS = INVALID_HANDLE;
 new Handle:fTOB = INVALID_HANDLE;
 
@@ -23,7 +24,7 @@ public Plugin:myinfo =
 {
 	name   = "Team Vote Config Loader",
 	author = "Comrade Bulkin",
-	description = "Executes config by Team Vote. Also player can change team by !infected, !survivor or !surv",
+	description = "Executes config by Team Vote. Also player can change team by !switchme, !infected, !survivor or !surv (for L4D1/2)",
 	version = GETVERSION,
 	url     = "http://forum.teamserver.ru"
 }
@@ -41,13 +42,16 @@ public OnPluginStart()
 	
 	AutoExecConfig(true, "tvc")
 	
+	// SDK Calls: Copied from L4DUnscrambler plugin, made by Fyren (http://forums.alliedmods.net/showthread.php?p=730278)
+	gConf = LoadGameConfigFile("tvc");
+	
 	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(INVALID_HANDLE, SDKConf_Signature, "SetHumanSpec");
+	PrepSDKCall_SetFromConf(gConf, SDKConf_Signature, "SetHumanSpec");
 	PrepSDKCall_AddParameter(SDKType_CBasePlayer, SDKPass_Pointer);
 	fSHS = EndPrepSDKCall();
 	
 	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(INVALID_HANDLE, SDKConf_Signature, "TakeOverBot");
+	PrepSDKCall_SetFromConf(gConf, SDKConf_Signature, "TakeOverBot");
 	PrepSDKCall_AddParameter(SDKType_Bool, SDKPass_Plain);
 	fTOB = EndPrepSDKCall();
 
@@ -389,12 +393,12 @@ public Action:switchPlayer(player, args)
 	{
 		if (GetClientTeam(player) == 2)
 		{
-			PerformL4DSwitch (player, 3, false);
+			PerformSwitch (player, 3, false);
 		}
 		else
 		if (GetClientTeam(player) == 3)
 		{
-			PerformL4DSwitch (player, 2, false);
+			PerformSwitch (player, 2, false);
 		}
 		else
 		{
@@ -413,22 +417,7 @@ public Action:spectate(player, args)
 	}
 	else
 	{
-		PerformL4DSwitch (player, 1, false);			
-	}
-
-	return Plugin_Handled;
-}
-
-// Switch player to Infected
-public Action:toInfected(player, args)
-{
-	if(player < 1)
-	{
-		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
-	}
-	else
-	{
-		PerformL4DSwitch (player, 2, false);	
+		PerformSwitch (player, 1, false);			
 	}
 
 	return Plugin_Handled;
@@ -443,14 +432,29 @@ public Action:toSurvivors(player, args)
 	}
 	else
 	{
-		PerformL4DSwitch (player, 3, false);
+		PerformSwitch (player, 2, false);
+	}
+
+	return Plugin_Handled;
+}
+
+// Switch player to Infected
+public Action:toInfected(player, args)
+{
+	if(player < 1)
+	{
+		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
+	}
+	else
+	{
+		PerformSwitch (player, 3, false);	
 	}
 
 	return Plugin_Handled;
 }
 
 // The part of this code is taken from L4DSwitchPlayers
-PerformL4DSwitch (player, team, bool:silent)
+PerformSwitch (player, team, bool:silent)
 {
 	new String:PlayerName[200];
 	GetClientName(player, PlayerName, sizeof(PlayerName));
@@ -468,7 +472,7 @@ PerformL4DSwitch (player, team, bool:silent)
 	// If teams are the same ...
 	if (GetClientTeam(player) == team)
 	{
-		PrintToChat(player, "[TVC] You are already in that team.");
+		PrintToChat(player, "\x03[TVC] \x05%t", "AlreadyInTeam");
 		return;
 	}
 	
@@ -509,27 +513,55 @@ PerformL4DSwitch (player, team, bool:silent)
 		if (!silent)
 		{
 			if (team == 1)
-				PrintToChatAll("\x03[TVC] \x05%s \x03jumped to \x05Spectators", PlayerName);
+				PrintToChatAll("\x03[TVC] \x01%t", "SwitchedToSpec", PlayerName);
 			else if (team == 2)
-				PrintToChatAll("\x03[TVC] \x05%s \x03jumped to \x05Survivors", PlayerName);
+				PrintToChatAll("\x03[TVC] \x05%t", "SwitchedToSurvivors", PlayerName);
 			else if (team == 3)
-				PrintToChatAll("\x03[TVC] \x05%s \x03jumped to \x05Infected", PlayerName);
+				PrintToChatAll("\x03[TVC] \x05%t", "SwitchedToInfected", PlayerName);
+		}
+	}
+	else
+	if (StrEqual(GameType, "tf", false))
+	{
+		ChangeClientTeam(player, team);
+
+		if (!silent)
+		{
+			if (team == 1)
+				PrintToChatAll("\x03[TVC] \x01%t", "SwitchedToSpec", PlayerName);
+			else if (team == 2)
+				PrintToChatAll("\x03[TVC] \x04%t", "SwitchedTo", PlayerName, "RED");
+			else if (team == 3)
+				PrintToChatAll("\x03[TVC] \x05%t", "SwitchedTo", PlayerName, "BLU");
+		}
+	}
+	else
+	if (StrEqual(GameType, "cstrike", false) || StrEqual(GameType, "css", false))
+	{
+		ChangeClientTeam(player, team);
+
+		if (!silent)
+		{
+			if (team == 1)
+				PrintToChatAll("\x06[TVC] \x05%t", "SwitchedToSpec", PlayerName);
+			else if (team == 2)
+				PrintToChatAll("\x06[TVC] \x04%t", "SwitchedTo", PlayerName, "Terrorists");
+			else if (team == 3)
+				PrintToChatAll("\x06[TVC] \x03%t", "SwitchedTo", PlayerName, "Counter-Terrorists");
 		}
 	}
 	else
 	{
 		ChangeClientTeam(player, team);
 
-		// Print switch info/ Temporaly print team no.
-		// TODO: Print separate messages for any game
 		if (!silent)
 		{
 			if (team == 1)
-				PrintToChatAll("\x03[TVC] \x05%s \x03jumped to \x05Spectators", PlayerName);
+				PrintToChatAll("\x03[TVC] \x05%t", "SwitchedToSpec", PlayerName);
 			else if (team == 2)
-				PrintToChatAll("\x03[TVC] \x05%s \x03jumped to \x05Team 1", PlayerName);
+				PrintToChatAll("\x03[TVC] \x05%t", "SwitchedTo", PlayerName, "Team #1");
 			else if (team == 3)
-				PrintToChatAll("\x03[TVC] \x05%s \x03jumped to \x05Team 2", PlayerName);
+				PrintToChatAll("\x03[TVC] \x05%t", "SwitchedTo", PlayerName, "Team #2");
 		}
 	}
 

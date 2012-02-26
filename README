@@ -1,3 +1,5 @@
+Part I
+************
 This plugin for SourceMod is made to start some configs
 after the both team vote. Generally it is made for
 L4D1 Rotoblin competition configs as there is no other
@@ -9,6 +11,8 @@ except of files with 4v4, 2v2 and so on file mask.
 To suggest a config a member of one of the team prints: 
 
 !cplay <SuperHardConfig>
+
+Except of !cplay also availiable !cfg and !load
 
 Any player of the other team can confirm the config by
 one of the commands:
@@ -32,14 +36,35 @@ Then a server starts the config after delay by mask:
 <prefix>_<SuperHardConfig>.cfg
 
 Prefix and delay are configurable through CVAR.
+***********
+
+Part II
+***********
+
+The other usefull function is the ability to a player to
+change the team quickly.
+
+For any game:
+!switchme - switch player to the opposite team
+!spectate - switch to spectators (if L4Downtown plugin is 
+            not installed)
+
+For L4D1/2 a player can also use:
+!infected - to switch to Infected team
+!survivor or !surv - to switch to Survivors team
+
 
 ==========================================================
+Часть I
+***************
 Плагин предназначен для запуска определенных конфигов после
 подверждения его обеими командами.
 
 Предполагается, что игрок одной из команд вводит в чат:
 
 !cplay <SuperHardConfig>
+
+Вместо !cplay можно также использовать !cfg или !load
 
 Вторая команда Подверждает предоженный конфиг командой:
 
@@ -66,3 +91,17 @@ Prefix and delay are configurable through CVAR.
 <prefix>_<SuperHardConfig>.cfg
 
 Префикс (prefix) и задержка задаются параметрами CVAR.
+************
+
+Часть II
+************
+Другой полезной функцией плагина является возможность
+игроку сменить команду просто написав в чат:
+
+Для всех игр:
+!switchme - перейти в противоположную команду
+!spectate - перейти в спектаторы
+
+Для L4D1/2 есть дополнительные:
+!infected - перейти вкоманду Зараженных
+!survivor or !surv - перейти в команду Выживших

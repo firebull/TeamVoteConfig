@@ -60,4 +60,33 @@
 	{
 		"en" 		"You must be in team to switch to another one."
 	}
+
+	"AlreadyInTeam"
+	{
+		"en"		"You are already in this team."
+	}
+
+	"SwitchedToSpec"
+	{
+		"#format"	"{1:s}"
+		"en"		"The {1} jumped to Spectators."
+	}
+
+	"SwitchedToSurvivors"
+	{
+		"#format"	"{1:s}"
+		"en"		"The {1} jumped to Survivors."
+	}
+
+	"SwitchedToInfected"
+	{
+		"#format"	"{1:s}"
+		"en"		"The {1} jumped to Infected."
+	}
+
+	"SwitchedTo"
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"The {1} jumped to {2}."
+	}
 }
