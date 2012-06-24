@@ -70,9 +70,19 @@
 		"ru"		"{1} перешел к Выжившим."
 	}
 
+	"SurvivorsTeamFull"
+	{
+		"ru"	"В команде Выживших нет мест."
+	}
+
 	"SwitchedToInfected"
 	{
 		"ru"		"{1} перешел к Зараженным."
+	}
+
+	"InfectedTeamFull"
+	{
+		"ru"	"В команде зараженных нет мест."
 	}
 
 	"SwitchedTo"

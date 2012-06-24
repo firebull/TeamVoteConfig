@@ -103,5 +103,5 @@ For L4D1/2 a player can also use:
 !spectate - перейти в спектаторы
 
 Для L4D1/2 есть дополнительные:
-!infected - перейти вкоманду Зараженных
-!survivor or !surv - перейти в команду Выживших
+!infected or !inf - перейти вкоманду Зараженных
+!survivor or !surv or !sur - перейти в команду Выживших

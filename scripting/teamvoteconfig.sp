@@ -4,7 +4,8 @@
 #include <sdktools_functions>
 #undef REQUIRE_PLUGIN
 
-#define GETVERSION "0.2.2"
+#define GETVERSION "0.2.3"
+#define MAXCLIENTS MaxClients
 
 new bool:votedTeamOne = false;
 new String:votedConfig[64];
@@ -119,10 +120,12 @@ public OnAllPluginsLoaded()
 	if (StrEqual(GameType, "left4dead", false) || StrEqual(GameType, "left4dead2", false) )
 	{
 		PrintToServer("[TVC] %s: %s", "The Game is", GameType, LANG_SERVER);
-		PrintToServer("[TVC] Now it's possible to use !infected, !survivor or !surv");
+		PrintToServer("[TVC] Now it's possible to use !infected or !inf, !survivor, $surv or !surv");
 		RegConsoleCmd("sm_infected", toInfected); // Add !infected command
+		RegConsoleCmd("sm_inf", toInfected); // Add !infected command
 		RegConsoleCmd("sm_survivor", toSurvivors); // Add !survivor command
 		RegConsoleCmd("sm_surv", toSurvivors); // Add !surv command
+		RegConsoleCmd("sm_sur", toSurvivors); // Add !surv command
 	} 
 
 }
@@ -379,6 +382,38 @@ public Action:StartConfig(Handle:timer)
 	votedConfig = "";	
 }
 
+// Get MAX players of each team
+stock GetL4dMaxPlayers(team)
+{
+	if(team == 2)
+	{
+		return GetConVarInt(FindConVar("survivor_limit"));
+	}
+	else if(team == 3)
+	{
+		return GetConVarInt(FindConVar("z_max_player_zombies"));
+	}
+	
+	return -1;
+}
+
+stock GetMaxPlayersInTeam(team)
+{
+	new players = 0;
+	
+	new i;
+
+	for(i = 1; i <= MAXCLIENTS; i++)
+	{
+		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == team)
+		{
+			players++;
+		}
+	}
+	
+	return players;
+}
+
 /*  The function, which allows a player
 	to switch himself to any team or to spectator
 	by a simple command !infected, !surv and so on
@@ -426,9 +461,21 @@ public Action:spectate(player, args)
 // Switch player to Survivors
 public Action:toSurvivors(player, args)
 {
+	
+	new maxSurvivorSlots = GetL4dMaxPlayers(2);
+	new survivorUsedSlots = GetMaxPlayersInTeam(2);
+	new freeSurvivorSlots = (maxSurvivorSlots - survivorUsedSlots);
+
 	if(player < 1)
 	{
 		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
+		return Plugin_Handled;
+	}
+
+	if(freeSurvivorSlots <= 0)
+	{
+		PrintToChat(player, "\x03[TVC] \x05%t", "SurvivorsTeamFull");
+		//PrintToServer("\x03[TVC] \x05Survivor Slots %d.\n\x03[TVC] \x05Survivor Players %d.\n\x03[TVC] \x05Free Survivor Slots %d.", maxSurvivorSlots, survivorUsedSlots, freeSurvivorSlots);
 	}
 	else
 	{
@@ -441,9 +488,20 @@ public Action:toSurvivors(player, args)
 // Switch player to Infected
 public Action:toInfected(player, args)
 {
+	new maxInfectedSlots = GetL4dMaxPlayers(2);
+	new infectedUsedSlots = GetMaxPlayersInTeam(2);
+	new freeInfectedSlots = (maxInfectedSlots - infectedUsedSlots);
+
 	if(player < 1)
 	{
 		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
+		return Plugin_Handled;
+	}
+
+	if(freeInfectedSlots <= 0)
+	{
+		PrintToChat(player, "\x03[TVC] \x05%t", "InfectedTeamFull");
+		//PrintToServer("\x03[TVC] \x05Infected Slots %d.\n\x03[TVC] \x05Infected Players %d.\n\x03[TVC] \x05Free Infected Slots %d.", maxInfectedSlots, infectedUsedSlots, freeInfectedSlots);
 	}
 	else
 	{

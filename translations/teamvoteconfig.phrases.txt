@@ -78,10 +78,20 @@
 		"en"		"The {1} jumped to Survivors."
 	}
 
+	"SurvivorsTeamFull"
+	{
+		"en"	"The Survivors team is full."
+	}
+
 	"SwitchedToInfected"
 	{
 		"#format"	"{1:s}"
 		"en"		"The {1} jumped to Infected."
+	}
+
+	"InfectedTeamFull"
+	{
+		"en"	"The Infected team is full."
 	}
 
 	"SwitchedTo"
