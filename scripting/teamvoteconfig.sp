@@ -4,12 +4,13 @@
 #include <sdktools_functions>
 #undef REQUIRE_PLUGIN
 
-#define GETVERSION "0.2.3"
+#define GETVERSION "0.2.4"
 #define MAXCLIENTS MaxClients
 
 new bool:votedTeamOne = false;
 new String:votedConfig[64];
 new votedTeam = 0;
+new bool:isL4D = false;
 
 new Handle:sm_tvc_prefix     = INVALID_HANDLE;
 new Handle:sm_tvc_exec_delay = INVALID_HANDLE;
@@ -107,6 +108,16 @@ public OnAllPluginsLoaded()
 	if (compLoaderExists == false)
 	{
 		RegConsoleCmd("sm_load", ConfigSuggest); // Add !load command
+
+		if (StrEqual(GameType, "left4dead", false) || StrEqual(GameType, "left4dead2", false) )
+		{
+			PrintToServer("[TVC] %s: %s", "The Game is", GameType, LANG_SERVER);
+			PrintToServer("[TVC] Now it's possible to use !infected or !inf, !survivor, !sur or !surv");
+			RegConsoleCmd("sm_infected", toInfected); // Add !infected command
+			RegConsoleCmd("sm_inf", toInfected); // Add !infected command
+			RegConsoleCmd("sm_survivor", toSurvivors); // Add !survivor command
+			RegConsoleCmd("sm_sur", toSurvivors); // Add !surv command
+		}
 	}
 	// End Of searching comp_loader
 
@@ -118,14 +129,9 @@ public OnAllPluginsLoaded()
 	// Set special variables for different games
 
 	if (StrEqual(GameType, "left4dead", false) || StrEqual(GameType, "left4dead2", false) )
-	{
-		PrintToServer("[TVC] %s: %s", "The Game is", GameType, LANG_SERVER);
-		PrintToServer("[TVC] Now it's possible to use !infected or !inf, !survivor, $surv or !surv");
-		RegConsoleCmd("sm_infected", toInfected); // Add !infected command
-		RegConsoleCmd("sm_inf", toInfected); // Add !infected command
-		RegConsoleCmd("sm_survivor", toSurvivors); // Add !survivor command
+	{		
+		isL4D = true;
 		RegConsoleCmd("sm_surv", toSurvivors); // Add !surv command
-		RegConsoleCmd("sm_sur", toSurvivors); // Add !surv command
 	} 
 
 }
@@ -382,7 +388,7 @@ public Action:StartConfig(Handle:timer)
 	votedConfig = "";	
 }
 
-// Get MAX players of each team
+// Get MAX players of each team in L4D1/2
 stock GetL4dMaxPlayers(team)
 {
 	if(team == 2)
@@ -397,6 +403,7 @@ stock GetL4dMaxPlayers(team)
 	return -1;
 }
 
+// Count Live players in team in L4D1/2
 stock GetMaxPlayersInTeam(team)
 {
 	new players = 0;
@@ -405,13 +412,25 @@ stock GetMaxPlayersInTeam(team)
 
 	for(i = 1; i <= MAXCLIENTS; i++)
 	{
-		if(IsClientConnected(i) && IsClientInGame(i) && GetClientTeam(i) == team)
+		if(IsClientInGame(i) && !IsFakeClient(i) && GetClientTeam(i) == team)
 		{
 			players++;
 		}
 	}
 	
 	return players;
+}
+
+// Get free slots in team in L4D1/2
+stock getL4dFreePlayers(team)
+{
+	new maxSlots = GetL4dMaxPlayers(team);
+	new UsedSlots = GetMaxPlayersInTeam(team);
+	new freeSlots = maxSlots - UsedSlots;
+
+	//PrintToServer("\x03[TVC] Slots:\n     > \x05Slots %d.\n     > \x05Live Players %d.\n     > \x05Free Slots %d.", maxSlots, UsedSlots, freeSlots);
+
+	return freeSlots;
 }
 
 /*  The function, which allows a player
@@ -425,10 +444,44 @@ public Action:switchPlayer(player, args)
 		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
 	}
 	else
+	if (isL4D == true)
+	{		
+		new playerTeam = GetClientTeam(player);
+		new freeSlots = getL4dFreePlayers(playerTeam);
+
+		if (playerTeam == 2)
+		{
+			if(freeSlots <= 0)
+			{
+				PrintToChat(player, "\x03[TVC] \x05%t", "InfectedTeamFull");
+			}
+			else
+			{
+				PerformSwitch (player, 3, false);	
+			}		
+		}
+		else
+		if (playerTeam == 3)
+		{
+			if(freeSlots <= 0)
+			{
+				PrintToChat(player, "\x03[TVC] \x05%t", "SurvivorsTeamFull");
+			}
+			else
+			{
+				PerformSwitch (player, 2, false);
+			}
+		}
+		else
+		{
+			PrintToChat(player, "\x03[TVC] \x05%t", "MustBeInTeamToSwitch");
+		}
+	}
+	else
 	{
 		if (GetClientTeam(player) == 2)
 		{
-			PerformSwitch (player, 3, false);
+			PerformSwitch (player, 3, false);		
 		}
 		else
 		if (GetClientTeam(player) == 3)
@@ -461,11 +514,8 @@ public Action:spectate(player, args)
 // Switch player to Survivors
 public Action:toSurvivors(player, args)
 {
+	new freeSurvivorSlots = getL4dFreePlayers(2);
 	
-	new maxSurvivorSlots = GetL4dMaxPlayers(2);
-	new survivorUsedSlots = GetMaxPlayersInTeam(2);
-	new freeSurvivorSlots = (maxSurvivorSlots - survivorUsedSlots);
-
 	if(player < 1)
 	{
 		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
@@ -475,7 +525,6 @@ public Action:toSurvivors(player, args)
 	if(freeSurvivorSlots <= 0)
 	{
 		PrintToChat(player, "\x03[TVC] \x05%t", "SurvivorsTeamFull");
-		//PrintToServer("\x03[TVC] \x05Survivor Slots %d.\n\x03[TVC] \x05Survivor Players %d.\n\x03[TVC] \x05Free Survivor Slots %d.", maxSurvivorSlots, survivorUsedSlots, freeSurvivorSlots);
 	}
 	else
 	{
@@ -488,12 +537,10 @@ public Action:toSurvivors(player, args)
 // Switch player to Infected
 public Action:toInfected(player, args)
 {
-	new maxInfectedSlots = GetL4dMaxPlayers(2);
-	new infectedUsedSlots = GetMaxPlayersInTeam(2);
-	new freeInfectedSlots = (maxInfectedSlots - infectedUsedSlots);
+	new freeInfectedSlots = getL4dFreePlayers(3);
 
 	if(player < 1)
-	{
+	{     
 		PrintToServer("\x03[TVC] \x05%T", "Command is in-game only", LANG_SERVER);
 		return Plugin_Handled;
 	}
@@ -501,7 +548,6 @@ public Action:toInfected(player, args)
 	if(freeInfectedSlots <= 0)
 	{
 		PrintToChat(player, "\x03[TVC] \x05%t", "InfectedTeamFull");
-		//PrintToServer("\x03[TVC] \x05Infected Slots %d.\n\x03[TVC] \x05Infected Players %d.\n\x03[TVC] \x05Free Infected Slots %d.", maxInfectedSlots, infectedUsedSlots, freeInfectedSlots);
 	}
 	else
 	{
